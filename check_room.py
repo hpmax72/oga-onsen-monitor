@@ -10,17 +10,23 @@ print("STATUS:", response.status_code)
 
 TARGET = "SPA SUITE こたつリビング海側"
 
-if TARGET in html:
-    print("TARGET ROOM: FOUND")
-else:
-    print("TARGET ROOM: NOT FOUND")
+print("TARGET ROOM:", "FOUND" if TARGET in html else "NOT FOUND")
 
-# 対象部屋の位置を探す
-pos = html.find(TARGET)
+# 対象部屋の位置
+room_pos = html.find(TARGET)
 
-if pos == -1:
-    print("TARGET ROOM HTML: NOT FOUND")
-else:
-    print("\n===== TARGET ROOM AREA =====")
-    print(html[max(0, pos - 1000):pos + 5000])
-    print("\n===== END =====")
+if room_pos == -1:
+    exit()
+
+# room_41319 の位置
+room_id = "room_41319"
+cal_pos = html.find(room_id, room_pos)
+
+print("ROOM ID:", "FOUND" if cal_pos != -1 else "NOT FOUND")
+
+if cal_pos == -1:
+    exit()
+
+print("\n===== CALENDAR AREA =====")
+print(html[max(0, cal_pos - 500):cal_pos + 12000])
+print("\n===== END =====")
