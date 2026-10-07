@@ -2,6 +2,7 @@ import requests
 import re
 import os
 import smtplib
+import time
 from email.mime.text import MIMEText
 from email.header import Header
 
@@ -15,13 +16,29 @@ if not gmail_user or not gmail_password:
 
 
 def check_room(url, room_id, date, room_name, hotel_name):
-    try:
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        print(hotel_name + " 取得エラー")
-        print(e)
-        return False
+
+    for attempt in range(2):
+
+        try:
+            response = requests.get(
+                url,
+                timeout=30,
+                headers={
+                    "User-Agent": "Mozilla/5.0"
+                }
+            )
+            response.raise_for_status()
+            break
+
+        except requests.RequestException as e:
+
+            if attempt == 0:
+                print(hotel_name + " 取得失敗 → 再試行します")
+                time.sleep(5)
+            else:
+                print(hotel_name + " 取得エラー")
+                print(e)
+                return False
 
     html = response.text
 
