@@ -18,9 +18,10 @@ def check_room(url, room_id, date, room_name, hotel_name):
     try:
         response = requests.get(url, timeout=15)
         response.raise_for_status()
-   except requests.RequestException as e:
-    print(hotel_name + " 取得エラー")
-    print(e)
+    except requests.RequestException as e:
+        print(hotel_name + " 取得エラー")
+        print(e)
+        return False
 
     html = response.text
 
@@ -61,10 +62,6 @@ def check_room(url, room_id, date, room_name, hotel_name):
     return False
 
 
-# =========================
-# ① 男鹿温泉・別邸つばき
-# =========================
-
 oga_url = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02"
 
 oga_available = check_room(
@@ -76,10 +73,6 @@ oga_available = check_room(
 )
 
 
-# =========================
-# ② 黄金崎不老ふ死温泉
-# =========================
-
 furo_url = "https://reserve.489ban.net/client/furofushi/0/plan/availability/room/stay?date=2026-11-01"
 
 furo_available = check_room(
@@ -90,10 +83,6 @@ furo_available = check_room(
     "黄金崎不老ふ死温泉"
 )
 
-
-# =========================
-# 空室があればGmail通知
-# =========================
 
 if oga_available or furo_available:
 
