@@ -18,9 +18,9 @@ def check_room(url, room_id, date, room_name, hotel_name):
     try:
         response = requests.get(url, timeout=15)
         response.raise_for_status()
-    except requests.RequestException:
-        print(hotel_name + " 取得エラー")
-        return False
+   except requests.RequestException as e:
+    print(hotel_name + " 取得エラー")
+    print(e)
 
     html = response.text
 
