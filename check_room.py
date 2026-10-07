@@ -5,60 +5,103 @@ import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
 
-URL = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02"
-ROOM_ID = "room_35591"
 
-try:
-    response = requests.get(URL, timeout=15)
-    response.raise_for_status()
-except requests.RequestException:
-    print("取得エラー")
+gmail_user = os.environ.get("GMAIL_USER")
+gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
+
+if not gmail_user or not gmail_password:
+    print("Gmail設定エラー")
     exit()
 
-html = response.text
 
-room_pos = html.find(ROOM_ID)
+def check_room(url, room_id, date, room_name, hotel_name):
+    try:
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+    except requests.RequestException:
+        print(hotel_name + " 取得エラー")
+        return False
 
-if room_pos == -1:
-    print("取得エラー")
-    exit()
+    html = response.text
 
-cal_pos = html.find('<div class="webc_avlbl_cal">', room_pos)
+    room_pos = html.find(room_id)
 
-if cal_pos == -1:
-    print("取得エラー")
-    exit()
+    if room_pos == -1:
+        print(hotel_name + " 部屋ID取得エラー")
+        return False
 
-tbody_pos = html.find("<tbody", cal_pos)
-tbody_end = html.find("</tbody>", tbody_pos)
+    cal_pos = html.find('<div class="webc_avlbl_cal">', room_pos)
 
-if tbody_pos == -1 or tbody_end == -1:
-    print("取得エラー")
-    exit()
+    if cal_pos == -1:
+        print(hotel_name + " カレンダー取得エラー")
+        return False
 
-tbody = html[tbody_pos:tbody_end]
+    tbody_pos = html.find("<tbody", cal_pos)
+    tbody_end = html.find("</tbody>", tbody_pos)
 
-cells = re.findall(r"<td.*?</td>", tbody, re.S)
+    if tbody_pos == -1 or tbody_end == -1:
+        print(hotel_name + " 日付データ取得エラー")
+        return False
 
-if len(cells) < 1:
-    print("取得エラー")
-    exit()
+    tbody = html[tbody_pos:tbody_end]
 
-cell_1102 = cells[0]
+    cells = re.findall(r"<td.*?</td>", tbody, re.S)
 
-if re.search(r"<a\b", cell_1102):
-    print("空室あり")
+    if len(cells) < 1:
+        print(hotel_name + " 日付セル取得エラー")
+        return False
 
-    gmail_user = os.environ.get("GMAIL_USER")
-    gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
+    cell = cells[0]
 
-    if not gmail_user or not gmail_password:
-        print("Gmail設定エラー")
-        exit()
+    if re.search(r"<a\b", cell):
+        print(hotel_name + " " + date + " 空室あり")
+        return True
 
-    subject = "男鹿温泉 11/2 空室あり"
+    print(hotel_name + " " + date + " 空室なし")
+    return False
 
-    body = """男鹿温泉　結いの宿　別邸つばき
+
+# =========================
+# ① 男鹿温泉・別邸つばき
+# =========================
+
+oga_url = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02"
+
+oga_available = check_room(
+    oga_url,
+    "room_35591",
+    "2026年11月2日",
+    "SPA SUITE こたつリビング海側（禁煙）（4名定員）",
+    "男鹿温泉・別邸つばき"
+)
+
+
+# =========================
+# ② 黄金崎不老ふ死温泉
+# =========================
+
+furo_url = "https://reserve.489ban.net/client/furofushi/0/plan/availability/room/stay?date=2026-11-01"
+
+furo_available = check_room(
+    furo_url,
+    "room_26787",
+    "2026年11月1日",
+    "モダン和室　禁煙海側（一部客室階段移動あり）",
+    "黄金崎不老ふ死温泉"
+)
+
+
+# =========================
+# 空室があればGmail通知
+# =========================
+
+if oga_available or furo_available:
+
+    messages = []
+
+    if oga_available:
+        messages.append(
+            """【男鹿温泉・別邸つばき】
 
 2026年11月2日に空室が見つかりました。
 
@@ -68,6 +111,25 @@ SPA SUITE こたつリビング海側（禁煙）（4名定員）
 予約サイト：
 https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02
 """
+        )
+
+    if furo_available:
+        messages.append(
+            """【黄金崎不老ふ死温泉】
+
+2026年11月1日に空室が見つかりました。
+
+対象：
+モダン和室　禁煙海側（一部客室階段移動あり）
+
+予約サイト：
+https://reserve.489ban.net/client/furofushi/0/plan/availability/room/stay?date=2026-11-01
+"""
+        )
+
+    subject = "【空室通知】宿泊予約の空室が見つかりました"
+
+    body = "\n\n".join(messages)
 
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = Header(subject, "utf-8")
@@ -84,6 +146,3 @@ https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=20
     except Exception as e:
         print("メール送信エラー")
         print(e)
-
-else:
-    print("空室なし")
