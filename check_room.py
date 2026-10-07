@@ -1,5 +1,4 @@
 import requests
-import re
 
 URL = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02"
 
@@ -8,36 +7,30 @@ html = response.text
 
 print("STATUS:", response.status_code)
 
-TARGET = "SPA SUITE こたつリビング海側"
+ROOM_ID = "room_35591"
 
-positions = [m.start() for m in re.finditer(TARGET, html)]
+room_pos = html.find(ROOM_ID)
 
-print("TARGET COUNT:", len(positions))
+if room_pos == -1:
+    print("ROOM 35591: NOT FOUND")
+    exit()
 
-for i, pos in enumerate(positions, 1):
+print("ROOM 35591: FOUND")
 
-    # 次の対象部屋までの範囲だけを見る
-    next_pos = positions[i] if i < len(positions) else pos + 5000
-    area = html[pos:next_pos]
+# 対象部屋のカレンダー付近
+cal_pos = html.find('<div class="webc_avlbl_cal">', room_pos)
 
-    # room_XXXXX を探す
-    room_ids = re.findall(r'room_(\d+)', area)
+if cal_pos == -1:
+    print("CALENDAR: NOT FOUND")
+    exit()
 
-    # 定員を探す
-    capacity = re.search(r'（([０-９0-9]+)名定員）', area)
+# 11/2を探す
+date_pos = html.find('<span>11/2</span>', cal_pos)
 
-    print("\n===== TARGET", i, "=====")
+if date_pos == -1:
+    print("11/2: NOT FOUND")
+    exit()
 
-    if capacity:
-        print("CAPACITY:", capacity.group(1), "名")
-    else:
-        print("CAPACITY: NOT FOUND")
-
-    if room_ids:
-        print("ROOM ID:", room_ids[0])
-    else:
-        print("ROOM ID: NOT FOUND")
-
-    print("ROOM IDS FOUND:", room_ids)
-
-    print("===== END =====")
+print("\n===== ROOM 35591 / 11-2 AREA =====")
+print(html[date_pos:date_pos + 5000])
+print("\n===== END =====")
