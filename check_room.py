@@ -1,19 +1,26 @@
 import requests
 import re
 
-URL = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/"
+URL = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02"
 
 response = requests.get(URL, timeout=30)
 html = response.text
 
 print("STATUS:", response.status_code)
-print("TARGET ROOM: FOUND" if "SPA SUITE こたつリビング海側" in html else "TARGET ROOM: NOT FOUND")
 
-# 11月2日付近のHTMLを探す
-for keyword in ["11月2日", "11/2", "2026-11-02", "02"]:
-    positions = [m.start() for m in re.finditer(keyword, html)]
-    print("KEYWORD:", keyword, "COUNT:", len(positions))
+TARGET = "SPA SUITE こたつリビング海側"
 
-    for pos in positions[:3]:
-        print("\n---", keyword, "---")
-        print(html[max(0, pos - 500):pos + 1000])
+if TARGET in html:
+    print("TARGET ROOM: FOUND")
+else:
+    print("TARGET ROOM: NOT FOUND")
+
+# 対象部屋の位置を探す
+pos = html.find(TARGET)
+
+if pos == -1:
+    print("TARGET ROOM HTML: NOT FOUND")
+else:
+    print("\n===== TARGET ROOM AREA =====")
+    print(html[max(0, pos - 1000):pos + 5000])
+    print("\n===== END =====")
