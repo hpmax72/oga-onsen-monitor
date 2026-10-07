@@ -1,44 +1,53 @@
 import requests
-
-URL = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02"
-
-response = requests.get(URL, timeout=30)
-html = response.text
-
-print("STATUS:", response.status_code)
+import re
+from datetime import date, timedelta
 
 ROOM_ID = "room_35591"
 
-room_pos = html.find(ROOM_ID)
+start_dates = [
+    "2026-10-01",
+    "2026-10-15",
+    "2026-10-29",
+    "2026-11-12",
+    "2026-11-26",
+    "2026-12-10",
+]
 
-if room_pos == -1:
-    print("ROOM 35591: NOT FOUND")
-    exit()
+for start_date in start_dates:
 
-print("ROOM 35591: FOUND")
+    URL = f"https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date={start_date}"
 
-cal_pos = html.find('<div class="webc_avlbl_cal">', room_pos)
+    response = requests.get(URL, timeout=30)
+    html = response.text
 
-if cal_pos == -1:
-    print("CALENDAR: NOT FOUND")
-    exit()
+    room_pos = html.find(ROOM_ID)
 
-# カレンダー内のtbodyを探す
-tbody_pos = html.find("<tbody", cal_pos)
+    if room_pos == -1:
+        print(start_date, "ROOM NOT FOUND")
+        continue
 
-if tbody_pos == -1:
-    print("TBODY: NOT FOUND")
-    exit()
+    cal_pos = html.find('<div class="webc_avlbl_cal">', room_pos)
 
-# tbodyの終了位置
-tbody_end = html.find("</tbody>", tbody_pos)
+    if cal_pos == -1:
+        print(start_date, "CALENDAR NOT FOUND")
+        continue
 
-if tbody_end == -1:
-    print("TBODY END: NOT FOUND")
-    exit()
+    tbody_pos = html.find("<tbody", cal_pos)
+    tbody_end = html.find("</tbody>", tbody_pos)
 
-tbody = html[tbody_pos:tbody_end + len("</tbody>")]
+    tbody = html[tbody_pos:tbody_end]
 
-print("\n===== ROOM 35591 TBODY =====")
-print(tbody)
-print("\n===== END =====")
+    print("\n==============================")
+    print("START:", start_date)
+
+    # <td>ごとに分割
+    cells = re.findall(r"<td.*?</td>", tbody, re.S)
+
+    for i, cell in enumerate(cells, 1):
+
+        if "<a " in cell or "<a>" in cell:
+
+            print("★ LINK FOUND  CELL:", i)
+            print(cell.strip())
+
+print("\n===== SEARCH END =====")
