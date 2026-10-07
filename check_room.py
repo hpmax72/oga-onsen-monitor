@@ -1,67 +1,65 @@
 import requests
 import re
 
+URL = "https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date=2026-11-02"
+
 ROOM_ID = "room_35591"
 
-start_dates = [
-    "2026-10-01",
-    "2026-10-15",
-    "2026-10-29",
-    "2026-11-12",
-    "2026-11-26",
-    "2026-12-10",
-]
+try:
+    response = requests.get(URL, timeout=15)
+    response.raise_for_status()
+except requests.RequestException as e:
+    print("REQUEST ERROR:", type(e).__name__)
+    exit()
 
-for start_date in start_dates:
+html = response.text
 
-    URL = f"https://reserve.489ban.net/client/ogaonsen/0/plan/availability/room/stay?date={start_date}"
+print("STATUS:", response.status_code)
 
-    print("\n==============================")
-    print("START:", start_date)
+# 4名定員の部屋を探す
+room_pos = html.find(ROOM_ID)
 
-    try:
-        response = requests.get(URL, timeout=10)
-    except requests.RequestException as e:
-        print("REQUEST ERROR:", type(e).__name__)
-        continue
+if room_pos == -1:
+    print("ROOM 35591: NOT FOUND")
+    exit()
 
-    print("STATUS:", response.status_code)
+print("ROOM 35591: FOUND")
 
-    html = response.text
+# この部屋のカレンダーを探す
+cal_pos = html.find('<div class="webc_avlbl_cal">', room_pos)
 
-    room_pos = html.find(ROOM_ID)
+if cal_pos == -1:
+    print("CALENDAR: NOT FOUND")
+    exit()
 
-    if room_pos == -1:
-        print("ROOM NOT FOUND")
-        continue
+# tbodyを取得
+tbody_pos = html.find("<tbody", cal_pos)
+tbody_end = html.find("</tbody>", tbody_pos)
 
-    cal_pos = html.find('<div class="webc_avlbl_cal">', room_pos)
+if tbody_pos == -1 or tbody_end == -1:
+    print("TBODY: NOT FOUND")
+    exit()
 
-    if cal_pos == -1:
-        print("CALENDAR NOT FOUND")
-        continue
+tbody = html[tbody_pos:tbody_end]
 
-    tbody_pos = html.find("<tbody", cal_pos)
-    tbody_end = html.find("</tbody>", tbody_pos)
+# 14個の<td>を取得
+cells = re.findall(r"<td.*?</td>", tbody, re.S)
 
-    if tbody_pos == -1 or tbody_end == -1:
-        print("TBODY NOT FOUND")
-        continue
+print("CELL COUNT:", len(cells))
 
-    tbody = html[tbody_pos:tbody_end]
+if len(cells) < 1:
+    print("11/2 CELL: NOT FOUND")
+    exit()
 
-    cells = re.findall(r"<td.*?</td>", tbody, re.S)
+# 1番目のセル = 11/2
+cell_1102 = cells[0]
 
-    found = False
+print("\n===== 11/2 CELL =====")
+print(cell_1102.strip())
+print("=====================")
 
-    for i, cell in enumerate(cells, 1):
-
-        if "<a " in cell or "<a>" in cell:
-            print("★ LINK FOUND  CELL:", i)
-            print(cell.strip())
-            found = True
-
-    if not found:
-        print("LINK: NONE")
-
-print("\n===== SEARCH END =====")
+# <a>の有無を判定
+if re.search(r"<a\b", cell_1102):
+    print("RESULT: 空室あり")
+else:
+    print("RESULT: 空室なし")
