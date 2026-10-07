@@ -8,7 +8,6 @@ html = response.text
 
 print("STATUS:", response.status_code)
 
-# 対象文字列を含む場所を全部探す
 TARGET = "SPA SUITE こたつリビング海側"
 
 positions = [m.start() for m in re.finditer(TARGET, html)]
@@ -16,6 +15,29 @@ positions = [m.start() for m in re.finditer(TARGET, html)]
 print("TARGET COUNT:", len(positions))
 
 for i, pos in enumerate(positions, 1):
+
+    # 次の対象部屋までの範囲だけを見る
+    next_pos = positions[i] if i < len(positions) else pos + 5000
+    area = html[pos:next_pos]
+
+    # room_XXXXX を探す
+    room_ids = re.findall(r'room_(\d+)', area)
+
+    # 定員を探す
+    capacity = re.search(r'（([０-９0-9]+)名定員）', area)
+
     print("\n===== TARGET", i, "=====")
-    print(html[max(0, pos - 300):pos + 1500])
+
+    if capacity:
+        print("CAPACITY:", capacity.group(1), "名")
+    else:
+        print("CAPACITY: NOT FOUND")
+
+    if room_ids:
+        print("ROOM ID:", room_ids[0])
+    else:
+        print("ROOM ID: NOT FOUND")
+
+    print("ROOM IDS FOUND:", room_ids)
+
     print("===== END =====")
