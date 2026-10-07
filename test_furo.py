@@ -1,7 +1,7 @@
 
 import requests
 
-url = "https://reserve.489ban.net/client/furofushi/0/"
+url = "https://reserve.489ban.net/client/furofushi/0/plan/availability/room/stay?date=2026-11-01"
 
 try:
     r = requests.get(
